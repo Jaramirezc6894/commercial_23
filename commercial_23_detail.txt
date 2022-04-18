@@ -1,0 +1,142 @@
+SELECT   
+		h.division_code				as	CODIGO_DIVISION
+		,h.division_name			as	DESCRIPCION_DIVISION
+		,
+        ,h.goods_code				as	internal_code
+        ,h.goods_name				as	item_description
+        ,c.store_code				as	store
+        --,l.real_quantity - l.safe_quantity - l.withhold_quantity - l.occupy_quantity                               wharehouse_stock
+        
+        ,CASE 
+			WHEN d.delivery_status='OUTBOUND' 
+			THEN e.quantity 
+			ELSE 0 
+		END							as	backorder_with_label
+        ,CASE 
+			WHEN a.conversion_type='SALES_TO_ALLOCATION' 
+			AND a.status!='FINISHED' 
+			THEN b.sku_quantity }
+			ELSE 0 
+		END							as	transfers_pending
+        ,CASE 
+			WHEN d.delivery_status='WAIT_FOR_DELIVERY' 
+			THEN e.quantity 
+			ELSE 0 
+		END							as	commited_back_order
+        ,CASE 
+			WHEN j.dim_supplier.transfertopo=1 
+				And a.conversion_type='SALES_TO_PURCHASE' 
+				And i.id IS NULL 
+			THEN b.sku_quantity --automatically PO
+			WHEN j.dim_supplier.transfertopo=0 
+				AND a.id IS NULL 
+			THEN h.quantity --manually PO, quantity in oms
+			ELSE 0 
+		END							as	back_order_not_commited --quantity that needs to convert to PO, but PO is not created yet.
+        ,h.paid_amount/100			as	backorder_paid_amount 
+        ,h.quantity * k.price                                                                                           cost --pending cost
+        ,CASE 
+			WHEN b.status IN ('VENDOR_ACCEPT','IN_TRANSPORT','HAND_OUT') 
+				AND a.conversion_type='SALES_TO_PURCHASE' 
+			THEN b.sku_quantity --on order PO quantity, only for automatically PO.
+        --WHEN j.dim_supplier.transfertopo=0 AND a.id IS NULL THEN 'MANUALLY PURCHASE ORDER' 
+			ELSE 0 
+		 END						as	amount_in_purchase_order --only take account the quantity in automatical PO, quantity in manually PO can't be found
+
+--        ,d.delivery_status
+--        ,a.conversion_type
+--        ,b.status
+--        ,a.updated_at
+--        ,c.id
+--,c.status
+--,c.scn_code
+FROM ${retail_ods}.s_erp_oms_order c
+	LEFT JOIN ${retail_ods}.s_erp_oms_order_line h  
+		ON c.id=h.order_id 
+		AND h.ds=${bizdate}
+	LEFT JOIN ${retail_ods}.s_erp_oms_conversion_order a
+		ON c.id=a.order_id
+		AND a.ds=${bizdate}
+	LEFT JOIN ${retail_ods}.s_erp_oms_conversion_order_line b
+		ON a.id=b.conversion_id
+		AND b.ds=${bizdate}
+		AND b.sku_id=h.goods_code
+	LEFT JOIN ${retail_ods}.s_erp_oms_fulfilment_order d  
+		ON c.id=d.source_order_id   
+		AND d.ds=${bizdate}
+	LEFT JOIN ${retail_ods}.s_erp_oms_fulfilment_order_line e
+		ON d.id=e.fulfilment_id 
+		AND e.goods_code=h.goods_code
+		AND e.ds=${bizdate}
+	LEFT JOIN ${retail_ods}.s_erp_performance_center__purchase_order i
+		ON  b.srm_po_code = i.code
+		and   i.isDeleted=0
+		AND i.ds=${bizdate}
+	LEFT JOIN ${retail_ods}.s_erp_performance_center__purchase_order_line f
+		ON i.id=f.PurchaseOrderLineRef
+		AND  f.materialCode=b.sku_id
+		and   f.isDeleted=0
+		AND f.ds=${bizdate}
+	LEFT JOIN ${LD_retail}.dim_sku j
+		ON j.code_sku = h.goods_code
+		AND j.ds=${bizdate}
+	LEFT JOIN ${retail_ods}.s_erp_material_center__agreement_line k
+		ON k.materialcode = h.goods_code
+		AND k.ds=${bizdate}
+	LEFT JOIN ${retail_ods}.s_erp_wms_center__inventory_line l
+        on c.store_code = l.warehousecode
+    LEFT JOIN ${retail_ods}.s_erp_tms_center__warehouse_relationship g
+        on l.warehousecode = g.startwarehouse
+--LEFT JOIN ${retail_ods}.s_erp_inventory l
+--ON  l.entity_id = h.goods_code
+--AND l.wh_code = c.store_code
+--AND l.ds = ${bizdate}
+WHERE c.ds=${bizdate}
+AND   c.status IN ('SOLD_OUT','CONVERTING','ALLOTING')
+--and c.scn_code='01030050002309012021'
+;
+ 
+
+
+
+
+
+INSERT OVERWRITE TABLE ads_rpt_commercial_23_w PARTITION (ds='${bizdate}')
+SELECT   a.item_division_code              item_division_code
+        ,a.internal_code                   internal_code
+        ,a.item_description                item_description
+        ,a.store                           store
+        ,a.backorder_with_label+a.transfers_pending+a.commited_back_order                wharehouse_stock
+        ,b.stk_avl_qty_1d                  available
+        ,a.backorder_with_label            backorder_with_label
+        ,a.transfers_pending               transfers_pending
+        ,a.commited_back_order             commited_back_order
+        ,a.back_order_not_commited         back_order_not_commited
+        ,a.backorder_paid_amount           backorder_paid_amount
+        ,a.cost                            cost
+        ,a.amount_in_purchase_order        amount_in_purchase_order
+        ,${bizdate}                        bizdate
+FROM    (
+SELECT   a.item_division_code                   item_division_code
+        ,a.internal_code                        internal_code
+        ,a.item_description                     item_description
+        ,a.store                                store
+        --,SUM(a.wharehouse_stock)                wharehouse_stock
+        ,SUM(a.backorder_with_label)            backorder_with_label
+        ,SUM(a.transfers_pending)               transfers_pending
+        ,SUM(a.commited_back_order)             commited_back_order
+        ,SUM(a.back_order_not_commited)         back_order_not_commited
+        ,SUM(a.backorder_paid_amount)           backorder_paid_amount
+        ,SUM(a.cost)                            cost
+        ,SUM(a.amount_in_purchase_order)        amount_in_purchase_order
+FROM    tmp01_ads_rpt_commercial_23_w a
+GROUP BY a.item_division_code
+        ,a.internal_code
+        ,a.item_description
+        ,a.store
+) a
+LEFT JOIN ${LD_retail}.dws_warehouse_all_sku b
+ON      b.dim_sku.code_sku=a.internal_code 
+AND     b.dim_warehouse_all.dim_store.code=a.store
+AND     b.ds=${bizdate}
+;
