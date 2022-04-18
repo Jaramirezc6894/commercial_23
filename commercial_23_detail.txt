@@ -1,18 +1,18 @@
 SELECT   
-		h.division_code				as	CODIGO_DIVISION
-		,h.division_name			as	DESCRIPCION_DIVISION
-		,c.store_code				as	TIENDA
-		,j.dim_supplier.vendorcode	as	CODIGO_PROVEEDOR
-		,j.dim_supplier.name		as	DESCRIPCION_PROVEEDOR
-        ,h.goods_code				as	INTERNO
-        ,h.goods_name				as	DESCRIPCION_INTERNO
-        ,							as	PRECIO_VENTA_NETO
-		,							as	BACK_ORDER_COSTO
+		h.division_code				AS	CODIGO_DIVISION
+		,h.division_name			AS	DESCRIPCION_DIVISION
+		,c.store_code				AS	TIENDA
+		,j.dim_supplier.vendorcode	AS	CODIGO_PROVEEDOR
+		,j.dim_supplier.name		AS	DESCRIPCION_PROVEEDOR
+        ,h.goods_code				AS	INTERNO
+        ,h.goods_name				AS	DESCRIPCION_INTERNO
+        ,							AS	PRECIO_VENTA_NETO
+		,							AS	BACK_ORDER_COSTO
 		,							AS	FECHA_ENTREGA
-		,							AS	SALES_CHECK_ALMACEN
+		,i.scn						AS	SALES_CHECK_ALMACEN
 		,g.startwarehouse			AS	ALMACEN_PRIMARIO
 		,							AS	EXISTENCIA_ALMACEN
-		,							AS	DISPONIBLE_ALMACEN
+		,m.stk_avl_qty_1d			AS	DISPONIBLE_ALMACEN
 		,							AS	PZAS_BT_COMPROMETIDO
 		,							AS	TOT_PZAS_EN_TRANSITO
 		,							AS	TOT_PZAS_EN_BACKORDER
@@ -28,7 +28,9 @@ SELECT
 		,							AS PZAS_OC_CITADA
 		
         --,l.real_quantity - l.safe_quantity - l.withhold_quantity - l.occupy_quantity                               wharehouse_stock
-        
+        ,a.backorder_with_label
+		+a.transfers_pending
+		+a.commited_back_order
         ,CASE 
 			WHEN d.delivery_status='OUTBOUND' 
 			THEN e.quantity 
@@ -109,13 +111,16 @@ FROM ${retail_ods}.s_erp_oms_order c
         on c.store_code = l.warehousecode
     LEFT JOIN ${retail_ods}.s_erp_tms_center__warehouse_relationship g
         on l.warehousecode = g.startwarehouse
+	LEFT JOIN ${LD_retail}.dws_warehouse_all_sku m
+		ON      m.dim_sku.code_sku = h.goods_code
+		AND     m.dim_warehouse_all.dim_store.code = c.store_code
+		AND     m.ds=${bizdate}
 --LEFT JOIN ${retail_ods}.s_erp_inventory l
 --ON  l.entity_id = h.goods_code
 --AND l.wh_code = c.store_code
 --AND l.ds = ${bizdate}
 WHERE c.ds=${bizdate}
 AND   c.status IN ('SOLD_OUT','CONVERTING','ALLOTING')
---and c.scn_code='01030050002309012021'
 ;
  
 
@@ -128,7 +133,10 @@ SELECT   a.item_division_code              item_division_code
         ,a.internal_code                   internal_code
         ,a.item_description                item_description
         ,a.store                           store
-        ,a.backorder_with_label+a.transfers_pending+a.commited_back_order                wharehouse_stock
+        ,a.backorder_with_label
+		+a.transfers_pending
+		+a.commited_back_order             as wharehouse_stock
+		
         ,b.stk_avl_qty_1d                  available
         ,a.backorder_with_label            backorder_with_label
         ,a.transfers_pending               transfers_pending
