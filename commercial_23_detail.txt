@@ -6,7 +6,27 @@ SELECT
 		,j.dim_supplier.name		as	DESCRIPCION_PROVEEDOR
         ,h.goods_code				as	INTERNO
         ,h.goods_name				as	DESCRIPCION_INTERNO
-        
+        ,							as	PRECIO_VENTA_NETO
+		,							as	BACK_ORDER_COSTO
+		,							AS	FECHA_ENTREGA
+		,							AS	SALES_CHECK_ALMACEN
+		,g.startwarehouse			AS	ALMACEN_PRIMARIO
+		,							AS	EXISTENCIA_ALMACEN
+		,							AS	DISPONIBLE_ALMACEN
+		,							AS	PZAS_BT_COMPROMETIDO
+		,							AS	TOT_PZAS_EN_TRANSITO
+		,							AS	TOT_PZAS_EN_BACKORDER
+		,							AS	TRANSF_GEN_SCN_ALM
+		,							AS	TDA_EMI_TRANSF
+		,							AS	TDA_RECEP_TRANSF
+		,							AS	PZAS_VTA_SCN
+		,							AS	PZAS_TRANSF
+		,							AS	TOT_COM
+		,							AS	CDT_SECUNDARIO
+		,							AS	DISPONIBLE_CDT_SEC
+		,							AS	OC_CITADA
+		,							AS PZAS_OC_CITADA
+		
         --,l.real_quantity - l.safe_quantity - l.withhold_quantity - l.occupy_quantity                               wharehouse_stock
         
         ,CASE 
