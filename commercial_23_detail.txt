@@ -1,10 +1,12 @@
 SELECT   
 		h.division_code				as	CODIGO_DIVISION
 		,h.division_name			as	DESCRIPCION_DIVISION
-		,
-        ,h.goods_code				as	internal_code
-        ,h.goods_name				as	item_description
-        ,c.store_code				as	store
+		,c.store_code				as	TIENDA
+		,j.dim_supplier.vendorcode	as	CODIGO_PROVEEDOR
+		,j.dim_supplier.name		as	DESCRIPCION_PROVEEDOR
+        ,h.goods_code				as	INTERNO
+        ,h.goods_name				as	DESCRIPCION_INTERNO
+        
         --,l.real_quantity - l.safe_quantity - l.withhold_quantity - l.occupy_quantity                               wharehouse_stock
         
         ,CASE 
