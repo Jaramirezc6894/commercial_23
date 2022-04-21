@@ -1,6 +1,8 @@
 SELECT   
-		h.division_code				AS	CODIGO_DIVISION
-		,h.division_name			AS	DESCRIPCION_DIVISION
+		SUBSTRING(j.dim_category.dim_category_lvl2.code,5,4)   AS	CODIGO_DIVISION
+        ,j.dim_category.dim_category_lvl2.name  AS	DESCRIPCION_DIVISION
+		-- h.division_code				AS	CODIGO_DIVISION
+		-- ,h.division_name			AS	DESCRIPCION_DIVISION
 		,c.store_code				AS	TIENDA
 		,j.dim_supplier.vendorcode	AS	CODIGO_PROVEEDOR
 		,j.dim_supplier.name		AS	DESCRIPCION_PROVEEDOR
@@ -126,8 +128,10 @@ FROM ${retail_ods}.s_erp_oms_order c
 		AND k.ds=${bizdate}
 	LEFT JOIN ${retail_ods}.s_erp_wms_center__inventory_line l
         on c.store_code = l.warehousecode
+		and l.ds = ${bizdate}
     LEFT JOIN ${retail_ods}.s_erp_tms_center__warehouse_relationship g
         on l.warehousecode = g.startwarehouse
+		and g.ds = ${bizdate}
 	LEFT JOIN ${LD_retail}.dws_warehouse_all_sku m
 		ON      m.dim_sku.code_sku = h.goods_code
 		AND     m.dim_warehouse_all.dim_store.code = c.store_code
