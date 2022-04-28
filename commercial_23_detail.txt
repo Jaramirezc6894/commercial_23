@@ -41,7 +41,7 @@ SELECT
 		,							AS	PZAS_VTA_SCN
 		,							AS	PZAS_TRANSF
 		,							AS	TOT_COM
-		,g.startwarehousecode		AS	CDT_SECUNDARIO
+		,g2.startwarehousecode		AS	CDT_SECUNDARIO
 		,							AS	DISPONIBLE_CDT_SEC
 		,							AS	OC_CITADA
 		,							AS 	PZAS_OC_CITADA
