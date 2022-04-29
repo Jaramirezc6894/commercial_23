@@ -32,14 +32,23 @@ SELECT
 			ELSE 0 
 		END							AS	EXISTENCIA_ALMACEN
 		,m.stk_avl_qty_1d			AS	DISPONIBLE_ALMACEN
-		,							AS	PZAS_BT_COMPROMETIDO
+		,CASE 
+			WHEN d.delivery_status='WAIT_FOR_DELIVERY' 
+			THEN e.quantity 
+			ELSE 0 
+		END							AS	PZAS_BT_COMPROMETIDO
 		,							AS	TOT_PZAS_EN_TRANSITO
 		,							AS	TOT_PZAS_EN_BACKORDER
 		,b.allocation_plan_code		AS	TRANSF_GEN_SCN_ALM
 		,g2.startwarehousecode		AS	TDA_EMIT_TRANSF
 		,g.startwarehousecode		AS	TDA_RECEP_TRANSF
 		,							AS	PZAS_VTA_SCN
-		,							AS	PZAS_TRANSF
+		,CASE 
+			WHEN a.conversion_type='SALES_TO_ALLOCATION' 
+			AND a.status!='FINISHED' 
+			THEN b.sku_quantity
+			ELSE 0 
+		END							AS	PZAS_TRANSF
 		,							AS	TOT_COM
 		,g2.startwarehousecode		AS	CDT_SECUNDARIO
 		,							AS	DISPONIBLE_CDT_SEC
@@ -50,17 +59,6 @@ SELECT
 			THEN e.quantity 
 			ELSE 0 
 		END							as	backorder_with_label
-        ,CASE 
-			WHEN a.conversion_type='SALES_TO_ALLOCATION' 
-			AND a.status!='FINISHED' 
-			THEN b.sku_quantity
-			ELSE 0 
-		END							as	transfers_pending
-        ,CASE 
-			WHEN d.delivery_status='WAIT_FOR_DELIVERY' 
-			THEN e.quantity 
-			ELSE 0 
-		END							as	commited_back_order
         ,CASE 
 			WHEN j.dim_supplier.transfertopo=1 
 				And a.conversion_type='SALES_TO_PURCHASE' 
@@ -144,8 +142,15 @@ WHERE c.ds=${bizdate}
 AND   c.status IN ('SOLD_OUT','CONVERTING','ALLOTING')
 ;
  
-
-
+,d.expect_fulfil_time
+LEFT JOIN ${retail_ods}.s_erp_oms_fulfilment_order d
+  ON        c.id = d.source_order_id
+ -- AND       B.scn_code = D.scn_code 
+ AND       d.ds = ${bizdate}
+ LEFT JOIN ${retail_ods}.s_erp_oms_fulfilment_order_line d1
+  ON       d.id = d1.fulfilment_id
+ AND       a.goods_code = d1.goods_code
+ AND       d1.ds = ${bizdate}
 
 
 
