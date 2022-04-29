@@ -11,6 +11,7 @@ SELECT
         ,							AS	PRECIO_VENTA_NETO
 		,							AS	BACK_ORDER_COSTO
 		,c1.receive_time			AS	FECHA_ENTREGA
+		,d.expect_fulfil_time       AS	FECHA_ENTREGA1
 		,i.scn						AS	SALES_CHECK_ALMACEN
 		,g.startwarehousecode		AS	ALMACEN_PRIMARIO
 		,CASE 
@@ -141,17 +142,6 @@ FROM ${retail_ods}.s_erp_oms_order c
 WHERE c.ds=${bizdate}
 AND   c.status IN ('SOLD_OUT','CONVERTING','ALLOTING')
 ;
- 
-,d.expect_fulfil_time
-LEFT JOIN ${retail_ods}.s_erp_oms_fulfilment_order d
-  ON        c.id = d.source_order_id
- -- AND       B.scn_code = D.scn_code 
- AND       d.ds = ${bizdate}
- LEFT JOIN ${retail_ods}.s_erp_oms_fulfilment_order_line d1
-  ON       d.id = d1.fulfilment_id
- AND       a.goods_code = d1.goods_code
- AND       d1.ds = ${bizdate}
-
 
 
 INSERT OVERWRITE TABLE ads_rpt_commercial_23_w PARTITION (ds='${bizdate}')
