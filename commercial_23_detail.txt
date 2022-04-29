@@ -54,7 +54,7 @@ SELECT
 		,							AS	TOT_COM
 		,g2.startwarehousecode		AS	CDT_SECUNDARIO
 		,							AS	DISPONIBLE_CDT_SEC
-		,							AS	OC_CITADA
+		,i.outCode					AS	OC_CITADA
 		,							AS 	PZAS_OC_CITADA
         ,CASE 
 			WHEN d.delivery_status='OUTBOUND' 
@@ -103,7 +103,11 @@ FROM ${retail_ods}.s_erp_oms_order c
 		AND e.ds=${bizdate}
 	LEFT JOIN ${retail_ods}.s_erp_performance_center__purchase_order i
 		ON  b.srm_po_code = i.code
-		and   i.isDeleted=0
+		and (i.status = 'TO_CONFIRM' or i.status = 'TO_DELIVER')
+		and i.auditStatus = 'PASSED'
+		and datetrunc(i.createdat, 'DD') >= '2020-01-01 00:00:00'
+		and datetrunc(i.createdat, 'DD') <= '2022-04-26 00:00:00'
+		and i.isDeleted=0
 		AND i.ds=${bizdate}
 	LEFT JOIN ${retail_ods}.s_erp_performance_center__purchase_order_line f
 		ON i.id=f.PurchaseOrderLineRef
