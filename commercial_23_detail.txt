@@ -13,6 +13,7 @@ SELECT
 		,c1.receive_time			AS	FECHA_ENTREGA
 		,d.expect_fulfil_time       AS	FECHA_ENTREGA1
 		,i.scn						AS	SALES_CHECK_ALMACEN
+		,c.scn_code					AS	SALES_CHECK_ALMACEN1
 		,g.startwarehousecode		AS	ALMACEN_PRIMARIO
 		,CASE 
 			WHEN d.delivery_status='OUTBOUND' 
