@@ -55,9 +55,11 @@ SELECT  DISTINCT
 	END							AS	PZAS_TRANSF
 	,							AS	TOT_COM
 	,g2.startwarehousecode		AS	CDT_SECUNDARIO
-	,							AS	DISPONIBLE_CDT_SEC
+	,l2.realQuantity			AS	DISPONIBLE_CDT_SEC
 	,i.outCode					AS	OC_CITADA
-	,							AS 	PZAS_OC_CITADA
+	,f.quantity					AS 	PZAS_OC_CITADA
+	
+	
 	,CASE 
 		WHEN d.delivery_status='OUTBOUND' 
 		THEN e.quantity 
@@ -122,10 +124,7 @@ FROM ${retail_ods}.s_erp_oms_order c
 	LEFT JOIN ${retail_ods}.s_erp_material_center__agreement_line k
 		ON k.materialcode = h.goods_code
 		AND k.ds=${bizdate}
-	LEFT JOIN ${retail_ods}.s_erp_wms_center__inventory_line l
-        on c.store_code = l.warehousecode
-		and l.ds = ${bizdate}
-    LEFT JOIN ${retail_ods}.s_erp_tms_center__warehouse_relationship g
+	LEFT JOIN ${retail_ods}.s_erp_tms_center__warehouse_relationship g
 		on c.store_code = g.endwarehousecode
 		and g.priority = 1
 		and g.starttype = 'DC'
@@ -134,7 +133,15 @@ FROM ${retail_ods}.s_erp_oms_order c
         on g2.endwarehousecode = g.endwarehousecode
 		and g2.priority = 2
 		and g2.starttype = 'DC'
-		and g2.ds = ${bizdate}		
+		and g2.ds = ${bizdate}	
+	LEFT JOIN ${retail_ods}.s_erp_wms_center__inventory_line l
+        on c.store_code = l.warehousecode
+		and l.ds = ${bizdate}
+	LEFT JOIN ${retail_ods}.s_erp_wms_center__inventory l1
+		ON l1.warehouseCode = g2.endwarehousecode
+		AND l1.materialCode = a.materialCode
+		AND l1.ds = ${bizdate}
+		AND l1.isDeleted = 0
 	LEFT JOIN ${LD_retail}.dws_warehouse_all_sku m
 		ON      m.dim_sku.code_sku = h.goods_code
 		AND     m.dim_warehouse_all.dim_store.code = c.store_code
