@@ -46,16 +46,23 @@ SELECT  DISTINCT
 	,g.startwarehousecode		AS	TDA_RECEP_TRANSF
 	,m1.code                    AS  origin_store       
     ,m2.code                    AS  destination_store
-	,							AS	PZAS_VTA_SCN
+	,h.fulfilled_quantity		AS	PZAS_VTA_SCN1
+	,f.deliveredQuantity		AS	PZAS_VTA_SCN2
 	,CASE 
 		WHEN a.conversion_type='SALES_TO_ALLOCATION' 
 		AND a.status!='FINISHED' 
 		THEN b.sku_quantity
 		ELSE 0 
 	END							AS	PZAS_TRANSF
-	,							AS	TOT_COM
+	,CASE 
+		WHEN b.status IN ('VENDOR_ACCEPT','IN_TRANSPORT','HAND_OUT') 
+			AND a.conversion_type='SALES_TO_PURCHASE' 
+		THEN b.sku_quantity --on order PO quantity, only for automatically PO.
+	--WHEN j.dim_supplier.transfertopo=0 AND a.id IS NULL THEN 'MANUALLY PURCHASE ORDER' 
+		ELSE 0 
+	 END						AS	TOT_COM
 	,g2.startwarehousecode		AS	CDT_SECUNDARIO
-	,l2.realQuantity			AS	DISPONIBLE_CDT_SEC
+	,l1.realQuantity			AS	DISPONIBLE_CDT_SEC
 	,i.outCode					AS	OC_CITADA
 	,f.quantity					AS 	PZAS_OC_CITADA
 	
@@ -77,13 +84,7 @@ SELECT  DISTINCT
 	END							as	back_order_not_commited --quantity that needs to convert to PO, but PO is not created yet.
 	,h.paid_amount/100			as	backorder_paid_amount 
 	,h.quantity * k.price                                                                                           cost --pending cost
-	,CASE 
-		WHEN b.status IN ('VENDOR_ACCEPT','IN_TRANSPORT','HAND_OUT') 
-			AND a.conversion_type='SALES_TO_PURCHASE' 
-		THEN b.sku_quantity --on order PO quantity, only for automatically PO.
-	--WHEN j.dim_supplier.transfertopo=0 AND a.id IS NULL THEN 'MANUALLY PURCHASE ORDER' 
-		ELSE 0 
-	 END						as	amount_in_purchase_order --only take account the quantity in automatical PO, quantity in manually PO can't be found
+-- as	amount_in_purchase_order --only take account the quantity in automatical PO, quantity in manually PO can't be found
 --,c.status
 --,c.scn_code
 --,l.real_quantity - l.safe_quantity - l.withhold_quantity - l.occupy_quantity                               wharehouse_stock
@@ -139,7 +140,7 @@ FROM ${retail_ods}.s_erp_oms_order c
 		and l.ds = ${bizdate}
 	LEFT JOIN ${retail_ods}.s_erp_wms_center__inventory l1
 		ON l1.warehouseCode = g2.endwarehousecode
-		AND l1.materialCode = a.materialCode
+		-- AND l1.materialCode = a.materialCode
 		AND l1.ds = ${bizdate}
 		AND l1.isDeleted = 0
 	LEFT JOIN ${LD_retail}.dws_warehouse_all_sku m
