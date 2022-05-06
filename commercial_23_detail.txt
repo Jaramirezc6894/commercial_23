@@ -8,7 +8,7 @@ SELECT  DISTINCT
 	,j.dim_supplier.name		AS	DESCRIPCION_PROVEEDOR
 	,h.goods_code				AS	INTERNO
 	,h.goods_name				AS	DESCRIPCION_INTERNO
-	,							AS	PRECIO_VENTA_NETO
+	,h.paid_amount/100			AS	PRECIO_VENTA_NETO
 	,							AS	BACK_ORDER_COSTO
 	,c1.receive_time			AS	FECHA_ENTREGA
 	,d.expect_fulfil_time       AS	FECHA_ENTREGA1
