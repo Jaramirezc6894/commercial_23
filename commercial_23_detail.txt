@@ -9,7 +9,7 @@ SELECT  DISTINCT
 	,h.goods_code				AS	INTERNO
 	,h.goods_name				AS	DESCRIPCION_INTERNO
 	,h.paid_amount/100			AS	PRECIO_VENTA_NETO
-	,							AS	BACK_ORDER_COSTO
+	,,h.quantity * k.price		AS	BACK_ORDER_COSTO
 	,c1.receive_time			AS	FECHA_ENTREGA
 	,d.expect_fulfil_time       AS	FECHA_ENTREGA1
 	,i.scn						AS	SALES_CHECK_ALMACEN
@@ -40,7 +40,7 @@ SELECT  DISTINCT
 		ELSE 0 
 	END							AS	PZAS_BT_COMPROMETIDO
 	,							AS	TOT_PZAS_EN_TRANSITO
-	,							AS	TOT_PZAS_EN_BACKORDER
+	,h.quantity					AS	TOT_PZAS_EN_BACKORDER
 	,b.allocation_plan_code		AS	TRANSF_GEN_SCN_ALM
 	,g2.startwarehousecode		AS	TDA_EMIT_TRANSF
 	,g.startwarehousecode		AS	TDA_RECEP_TRANSF
@@ -83,7 +83,7 @@ SELECT  DISTINCT
 		ELSE 0 
 	END							as	back_order_not_commited --quantity that needs to convert to PO, but PO is not created yet.
 	,h.paid_amount/100			as	backorder_paid_amount 
-	,h.quantity * k.price                                                                                           cost --pending cost
+	 --pending cost
 -- as	amount_in_purchase_order --only take account the quantity in automatical PO, quantity in manually PO can't be found
 --,c.status
 --,c.scn_code
