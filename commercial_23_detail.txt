@@ -199,7 +199,7 @@ AND     b.ds=${bizdate}
 	END							as	back_order_not_commited --quantity that needs to convert to PO, but PO is not created yet.
 	,h.paid_amount/100			as	backorder_paid_amount 
 	 --pending cost
--- as	amount_in_purchase_order --only take account the quantity in automatical PO, quantity in manually PO can't be found
+-- as	amount_in_purchase_order --only take account the quantity in automatical PO, quantity in manually PO cant be found
 
 
 
