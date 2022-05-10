@@ -1,15 +1,13 @@
 SELECT  DISTINCT
 	SUBSTRING(j.dim_category.dim_category_lvl2.code,5,4)   AS	CODIGO_DIVISION
-	,j.dim_category.dim_category_lvl2.name  AS	DESCRIPCION_DIVISION
-	-- h.division_code				AS	CODIGO_DIVISION
-	-- ,h.division_name			AS	DESCRIPCION_DIVISION
+	,j.dim_category.dim_category_lvl2.name  AS	DESCRIPCION_DIVISION	
 	,c.store_code				AS	TIENDA
 	,j.dim_supplier.vendorcode	AS	CODIGO_PROVEEDOR
 	,j.dim_supplier.name		AS	DESCRIPCION_PROVEEDOR
 	,h.goods_code				AS	INTERNO
 	,h.goods_name				AS	DESCRIPCION_INTERNO
 	,h.paid_amount/100			AS	PRECIO_VENTA_NETO
-	,,h.quantity * k.price		AS	BACK_ORDER_COSTO
+	,h.quantity * k.price		AS	BACK_ORDER_COSTO
 	,c1.receive_time			AS	FECHA_ENTREGA
 	,d.expect_fulfil_time       AS	FECHA_ENTREGA1
 	,i.scn						AS	SALES_CHECK_ALMACEN
@@ -39,7 +37,7 @@ SELECT  DISTINCT
 		THEN e.quantity 
 		ELSE 0 
 	END							AS	PZAS_BT_COMPROMETIDO
-	,							AS	TOT_PZAS_EN_TRANSITO
+	,h.quantity					AS	TOT_PZAS_EN_TRANSITO
 	,h.quantity					AS	TOT_PZAS_EN_BACKORDER
 	,b.allocation_plan_code		AS	TRANSF_GEN_SCN_ALM
 	,g2.startwarehousecode		AS	TDA_EMIT_TRANSF
@@ -57,37 +55,13 @@ SELECT  DISTINCT
 	,CASE 
 		WHEN b.status IN ('VENDOR_ACCEPT','IN_TRANSPORT','HAND_OUT') 
 			AND a.conversion_type='SALES_TO_PURCHASE' 
-		THEN b.sku_quantity --on order PO quantity, only for automatically PO.
-	--WHEN j.dim_supplier.transfertopo=0 AND a.id IS NULL THEN 'MANUALLY PURCHASE ORDER' 
+		THEN b.sku_quantity
 		ELSE 0 
 	 END						AS	TOT_COM
 	,g2.startwarehousecode		AS	CDT_SECUNDARIO
 	,l1.realQuantity			AS	DISPONIBLE_CDT_SEC
 	,i.outCode					AS	OC_CITADA
 	,f.quantity					AS 	PZAS_OC_CITADA
-	
-	
-	,CASE 
-		WHEN d.delivery_status='OUTBOUND' 
-		THEN e.quantity 
-		ELSE 0 
-	END							as	backorder_with_label
-	,CASE 
-		WHEN j.dim_supplier.transfertopo=1 
-			And a.conversion_type='SALES_TO_PURCHASE' 
-			And i.id IS NULL 
-		THEN b.sku_quantity --automatically PO
-		WHEN j.dim_supplier.transfertopo=0 
-			AND a.id IS NULL 
-		THEN h.quantity --manually PO, quantity in oms
-		ELSE 0 
-	END							as	back_order_not_commited --quantity that needs to convert to PO, but PO is not created yet.
-	,h.paid_amount/100			as	backorder_paid_amount 
-	 --pending cost
--- as	amount_in_purchase_order --only take account the quantity in automatical PO, quantity in manually PO can't be found
---,c.status
---,c.scn_code
---,l.real_quantity - l.safe_quantity - l.withhold_quantity - l.occupy_quantity                               wharehouse_stock
 FROM ${retail_ods}.s_erp_oms_order c
 	LEFT JOIN ${retail_ods}.s_erp_oms_order_line h  
 		ON c.id=h.order_id 
@@ -140,7 +114,6 @@ FROM ${retail_ods}.s_erp_oms_order c
 		and l.ds = ${bizdate}
 	LEFT JOIN ${retail_ods}.s_erp_wms_center__inventory l1
 		ON l1.warehouseCode = g2.endwarehousecode
-		-- AND l1.materialCode = a.materialCode
 		AND l1.ds = ${bizdate}
 		AND l1.isDeleted = 0
 	LEFT JOIN ${LD_retail}.dws_warehouse_all_sku m
@@ -156,10 +129,6 @@ FROM ${retail_ods}.s_erp_oms_order c
     LEFT JOIN ${LD_retail}.dim_warehouse_all m2
         ON c.store_code = m2.warehouse_all_id
         AND m2.ds =${bizdate}
---LEFT JOIN ${retail_ods}.s_erp_inventory l
---ON  l.entity_id = h.goods_code
---AND l.wh_code = c.store_code
---AND l.ds = ${bizdate}
 WHERE c.ds=${bizdate}
 AND   c.status IN ('SOLD_OUT','CONVERTING','ALLOTING')
 ;
@@ -207,3 +176,41 @@ ON      b.dim_sku.code_sku=a.internal_code
 AND     b.dim_warehouse_all.dim_store.code=a.store
 AND     b.ds=${bizdate}
 ;
+
+
+
+
+	
+	
+	,CASE 
+		WHEN d.delivery_status='OUTBOUND' 
+		THEN e.quantity 
+		ELSE 0 
+	END							as	backorder_with_label
+	,CASE 
+		WHEN j.dim_supplier.transfertopo=1 
+			And a.conversion_type='SALES_TO_PURCHASE' 
+			And i.id IS NULL 
+		THEN b.sku_quantity --automatically PO
+		WHEN j.dim_supplier.transfertopo=0 
+			AND a.id IS NULL 
+		THEN h.quantity --manually PO, quantity in oms
+		ELSE 0 
+	END							as	back_order_not_commited --quantity that needs to convert to PO, but PO is not created yet.
+	,h.paid_amount/100			as	backorder_paid_amount 
+	 --pending cost
+-- as	amount_in_purchase_order --only take account the quantity in automatical PO, quantity in manually PO can't be found
+
+
+
+,CASE 
+		WHEN b.status IN ('VENDOR_ACCEPT','IN_TRANSPORT','HAND_OUT') 
+			AND a.conversion_type='SALES_TO_PURCHASE' 
+		THEN b.sku_quantity --on order PO quantity, only for automatically PO.
+	--WHEN j.dim_supplier.transfertopo=0 AND a.id IS NULL THEN 'MANUALLY PURCHASE ORDER' 
+		ELSE 0 
+	 END						AS	TOT_COM
+	 
+	 
+	 -- h.division_code				AS	CODIGO_DIVISION
+	-- ,h.division_name			AS	DESCRIPCION_DIVISION
